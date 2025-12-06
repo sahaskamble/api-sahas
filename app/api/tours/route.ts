@@ -14,15 +14,16 @@ export async function GET(request: NextRequest) {
 
     if (id) {
       // Get single tour
-      const [rows] = await db.execute<Tour[]>(
+      const [rows] = await db.execute(
         'SELECT * FROM tours WHERE id = ?',
         [id]
       );
       db.release();
-      if (Array.isArray(rows) && rows.length === 0) {
+      const tours = rows as Tour[];
+      if (Array.isArray(tours) && tours.length === 0) {
         return NextResponse.json({ error: 'Tour not found' }, { status: 404 });
       }
-      return NextResponse.json(rows[0]);
+      return NextResponse.json(tours[0]);
     }
 
     // Build query for filters
@@ -41,9 +42,10 @@ export async function GET(request: NextRequest) {
 
     query += ' ORDER BY created_at DESC';
 
-    const [rows] = await db.execute<Tour[]>(query, params);
+    const [rows] = await db.execute(query, params);
+    const tours = rows as Tour[];
     db.release();
-    return NextResponse.json(rows);
+    return NextResponse.json(tours);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

@@ -11,14 +11,15 @@ export async function GET(request: NextRequest) {
     const user_id = searchParams.get('user_id');
 
     if (id) {
-      const [rows] = await pool.execute<TourReview[]>(
+      const [rows] = await pool.execute(
         'SELECT * FROM tour_reviews WHERE id = ?',
         [id]
       );
-      if (Array.isArray(rows) && rows.length === 0) {
+      const reviews = rows as TourReview[];
+      if (Array.isArray(reviews) && reviews.length === 0) {
         return NextResponse.json({ error: 'Review not found' }, { status: 404 });
       }
-      return NextResponse.json(rows[0]);
+      return NextResponse.json(reviews[0]);
     }
 
     let query = 'SELECT * FROM tour_reviews WHERE 1=1';
@@ -36,8 +37,9 @@ export async function GET(request: NextRequest) {
 
     query += ' ORDER BY created_at DESC';
 
-    const [rows] = await pool.execute<TourReview[]>(query, params);
-    return NextResponse.json(rows);
+    const [rows] = await pool.execute(query, params);
+    const reviews = rows as TourReview[];
+    return NextResponse.json(reviews);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

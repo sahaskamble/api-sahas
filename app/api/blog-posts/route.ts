@@ -11,14 +11,15 @@ export async function GET(request: NextRequest) {
     const is_published = searchParams.get('is_published');
 
     if (id) {
-      const [rows] = await pool.execute<BlogPost[]>(
+      const [rows] = await pool.execute(
         'SELECT * FROM blog_posts WHERE id = ?',
         [id]
       );
-      if (Array.isArray(rows) && rows.length === 0) {
+      const blogPosts = rows as BlogPost[];
+      if (Array.isArray(blogPosts) && blogPosts.length === 0) {
         return NextResponse.json({ error: 'Blog post not found' }, { status: 404 });
       }
-      return NextResponse.json(rows[0]);
+      return NextResponse.json(blogPosts[0]);
     }
 
     let query = 'SELECT * FROM blog_posts WHERE 1=1';
@@ -36,8 +37,9 @@ export async function GET(request: NextRequest) {
 
     query += ' ORDER BY created_at DESC';
 
-    const [rows] = await pool.execute<BlogPost[]>(query, params);
-    return NextResponse.json(rows);
+    const [rows] = await pool.execute(query, params);
+    const blogPosts = rows as BlogPost[];
+    return NextResponse.json(blogPosts);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

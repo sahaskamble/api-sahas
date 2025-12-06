@@ -11,14 +11,15 @@ export async function GET(request: NextRequest) {
     const is_active = searchParams.get('is_active');
 
     if (id) {
-      const [rows] = await pool.execute<Event[]>(
+      const [rows] = await pool.execute(
         'SELECT * FROM events WHERE id = ?',
         [id]
       );
-      if (Array.isArray(rows) && rows.length === 0) {
+      const events = rows as Event[];
+      if (Array.isArray(events) && events.length === 0) {
         return NextResponse.json({ error: 'Event not found' }, { status: 404 });
       }
-      return NextResponse.json(rows[0]);
+      return NextResponse.json(events[0]);
     }
 
     let query = 'SELECT * FROM events WHERE 1=1';
@@ -36,8 +37,9 @@ export async function GET(request: NextRequest) {
 
     query += ' ORDER BY date ASC';
 
-    const [rows] = await pool.execute<Event[]>(query, params);
-    return NextResponse.json(rows);
+    const [rows] = await pool.execute(query, params);
+    const events = rows as Event[];
+    return NextResponse.json(events);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

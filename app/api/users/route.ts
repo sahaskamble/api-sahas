@@ -12,24 +12,26 @@ export async function GET(request: NextRequest) {
 
     if (uid) {
       // Get single user
-      const [rows] = await db.execute<User[]>(
+      const [rows] = await db.execute(
         'SELECT * FROM users WHERE uid = ?',
         [uid]
       );
       db.release();
-      if (Array.isArray(rows) && rows.length === 0) {
+      const users = rows as User[];
+      if (Array.isArray(users) && users.length === 0) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
-      return NextResponse.json(rows[0]);
+      return NextResponse.json(users[0]);
     }
 
     // Get all users
-    const [rows] = await db.execute<User[]>('SELECT * FROM users ORDER BY join_date DESC');
+    const [rows] = await db.execute('SELECT * FROM users ORDER BY join_date DESC');
+    const users = rows as User[];
     db.release();
-    return NextResponse.json(rows);
+    return NextResponse.json(users);
   } catch (error: any) {
     console.error('Database error:', error);
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: error.message || 'Database connection error'
     }, { status: 500 });
   }

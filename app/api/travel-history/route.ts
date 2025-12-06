@@ -12,14 +12,15 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
 
     if (id) {
-      const [rows] = await pool.execute<TravelHistory[]>(
+      const [rows] = await pool.execute(
         'SELECT * FROM travel_history WHERE id = ?',
         [id]
       );
-      if (Array.isArray(rows) && rows.length === 0) {
+      const travelHistory = rows as TravelHistory[];
+      if (Array.isArray(travelHistory) && travelHistory.length === 0) {
         return NextResponse.json({ error: 'Travel history not found' }, { status: 404 });
       }
-      return NextResponse.json(rows[0]);
+      return NextResponse.json(travelHistory[0]);
     }
 
     let query = 'SELECT * FROM travel_history WHERE 1=1';
@@ -42,8 +43,9 @@ export async function GET(request: NextRequest) {
 
     query += ' ORDER BY travel_date DESC';
 
-    const [rows] = await pool.execute<TravelHistory[]>(query, params);
-    return NextResponse.json(rows);
+    const [rows] = await pool.execute(query, params);
+    const travelHistory = rows as TravelHistory[];
+    return NextResponse.json(travelHistory);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

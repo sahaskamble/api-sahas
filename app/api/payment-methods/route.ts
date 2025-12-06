@@ -1,27 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { Favorite } from '@/types/database';
+import { PaymentMethod } from '@/types/database';
 
-// GET all favorites or filtered by user_id or tour_id
+// GET all payment methods or filtered by user_id
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     const user_id = searchParams.get('user_id');
-    const tour_id = searchParams.get('tour_id');
 
     if (id) {
-      const [rows] = await pool.execute<Favorite[]>(
-        'SELECT * FROM favorites WHERE id = ?',
+      const [rows] = await pool.execute(
+        'SELECT * FROM payment_methods WHERE id = ?',
         [id]
       );
-      if (Array.isArray(rows) && rows.length === 0) {
-        return NextResponse.json({ error: 'Favorite not found' }, { status: 404 });
+      const paymentMethods = rows as PaymentMethod[];
+      if (Array.isArray(paymentMethods) && paymentMethods.length === 0) {
+        return NextResponse.json({ error: 'Payment method not found' }, { status: 404 });
       }
-      return NextResponse.json(rows[0]);
+      return NextResponse.json(paymentMethods[0]);
     }
 
-    let query = 'SELECT * FROM favorites WHERE 1=1';
+    let query = 'SELECT * FROM payment_methods WHERE 1=1';
     const params: any[] = [];
 
     if (user_id) {
@@ -29,52 +29,50 @@ export async function GET(request: NextRequest) {
       params.push(user_id);
     }
 
-    if (tour_id) {
-      query += ' AND tour_id = ?';
-      params.push(tour_id);
-    }
-
     query += ' ORDER BY added_at DESC';
 
-    const [rows] = await pool.execute<Favorite[]>(query, params);
-    return NextResponse.json(rows);
+    const [rows] = await pool.execute(query, params);
+    const paymentMethods = rows as PaymentMethod[];
+    return NextResponse.json(paymentMethods);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// POST - Create new favorite
+// POST - Create new payment method
 export async function POST(request: NextRequest) {
   try {
-    const body: Favorite = await request.json();
-    const { id, user_id, tour_id, tour_name } = body;
+    const body: PaymentMethod = await request.json();
+    const { id, user_id, type } = body;
 
-    if (!id || !user_id || !tour_id || !tour_name) {
+    if (!id || !user_id || !type) {
       return NextResponse.json(
-        { error: 'id, user_id, tour_id, and tour_name are required' },
+        { error: 'id, user_id, and type are required' },
         { status: 400 }
       );
     }
 
     const [result] = await pool.execute(
-      `INSERT INTO favorites (id, user_id, tour_id, tour_name, tour_image) 
-       VALUES (?, ?, ?, ?, ?)`,
-      [id, user_id, tour_id, tour_name, body.tour_image || null]
+      `INSERT INTO payment_methods (id, user_id, type, last4, card_type, upi_id, bank_name, is_default) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id, user_id, type,
+        body.last4 || null, body.card_type || null,
+        body.upi_id || null, body.bank_name || null,
+        body.is_default || false
+      ]
     );
 
-    return NextResponse.json({ message: 'Favorite added successfully', id }, { status: 201 });
+    return NextResponse.json({ message: 'Payment method created successfully', id }, { status: 201 });
   } catch (error: any) {
-    if (error.code === 'ER_DUP_ENTRY') {
-      return NextResponse.json({ error: 'Favorite already exists' }, { status: 409 });
-    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// PUT - Update favorite
+// PUT - Update payment method
 export async function PUT(request: NextRequest) {
   try {
-    const body: Partial<Favorite> = await request.json();
+    const body: Partial<PaymentMethod> = await request.json();
     const { id, ...updateFields } = body;
 
     if (!id) {
@@ -90,17 +88,17 @@ export async function PUT(request: NextRequest) {
     const values = fields.map(field => (updateFields as any)[field]);
 
     const [result] = await pool.execute(
-      `UPDATE favorites SET ${setClause} WHERE id = ?`,
+      `UPDATE payment_methods SET ${setClause} WHERE id = ?`,
       [...values, id]
     );
 
-    return NextResponse.json({ message: 'Favorite updated successfully', id });
+    return NextResponse.json({ message: 'Payment method updated successfully', id });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// DELETE - Delete favorite
+// DELETE - Delete payment method
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -110,9 +108,9 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'id is required' }, { status: 400 });
     }
 
-    const [result] = await pool.execute('DELETE FROM favorites WHERE id = ?', [id]);
+    const [result] = await pool.execute('DELETE FROM payment_methods WHERE id = ?', [id]);
 
-    return NextResponse.json({ message: 'Favorite deleted successfully' });
+    return NextResponse.json({ message: 'Payment method deleted successfully' });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

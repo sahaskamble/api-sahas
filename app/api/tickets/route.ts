@@ -12,14 +12,15 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
 
     if (ticket_id) {
-      const [rows] = await pool.execute<Ticket[]>(
+      const [rows] = await pool.execute(
         'SELECT * FROM tickets WHERE ticket_id = ?',
         [ticket_id]
       );
-      if (Array.isArray(rows) && rows.length === 0) {
+      const tickets = rows as Ticket[];
+      if (Array.isArray(tickets) && tickets.length === 0) {
         return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
       }
-      return NextResponse.json(rows[0]);
+      return NextResponse.json(tickets[0]);
     }
 
     let query = 'SELECT * FROM tickets WHERE 1=1';
@@ -42,8 +43,9 @@ export async function GET(request: NextRequest) {
 
     query += ' ORDER BY created_at DESC';
 
-    const [rows] = await pool.execute<Ticket[]>(query, params);
-    return NextResponse.json(rows);
+    const [rows] = await pool.execute(query, params);
+    const tickets = rows as Ticket[];
+    return NextResponse.json(tickets);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
