@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
       );
       db.release();
       const users = rows as User[];
+      console.log("Users", users);
       if (Array.isArray(users) && users.length === 0) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
