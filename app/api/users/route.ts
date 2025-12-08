@@ -28,6 +28,8 @@ export async function GET(request: NextRequest) {
     // Get all users
     const [rows] = await db.execute('SELECT * FROM users ORDER BY join_date DESC');
     const users = rows as User[];
+    console.log("Users", users);
+
     db.release();
     return NextResponse.json(users);
   } catch (error: any) {
